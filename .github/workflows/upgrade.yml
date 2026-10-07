@@ -1,0 +1,56 @@
+name: Upgrade from Nekogram
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Merge upstream main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/Nekogram/Nekogram.git
+          git fetch upstream main
+          if [ "$(git rev-list --count main..upstream/main)" = "0" ]; then
+            echo "main already contains Nekogram upstream"
+            exit 0
+          fi
+          branch="upgrade/nekogram-$(date -u +%Y%m%d)"
+          git checkout -B "$branch" main
+          if git merge upstream/main -m "Merge Nekogram upstream main"; then
+            echo "merged=true" >> "$GITHUB_ENV"
+            echo "branch=$branch" >> "$GITHUB_ENV"
+            git push -u origin "$branch"
+          else
+            git merge --abort || true
+            echo "Upstream merge conflicted with the ad-free patches. Resolve it locally from upstream/main."
+            exit 1
+          fi
+
+      - name: Open pull request
+        if: env.merged == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ env.branch }}
+        run: |
+          existing=$(gh pr list --repo "${GITHUB_REPOSITORY}" --head "$BRANCH" --base main --json number --jq 'length')
+          if [ "$existing" = "0" ]; then
+            gh pr create --repo "${GITHUB_REPOSITORY}" --base main --head "$BRANCH" \
+              --title "Upgrade from Nekogram upstream" \
+              --body "Weekly merge of https://github.com/Nekogram/Nekogram main into this ad-free fork. Review the build before merging."
+          else
+            echo "Pull request for $BRANCH already exists"
+          fi

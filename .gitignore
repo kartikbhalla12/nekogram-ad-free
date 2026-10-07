@@ -4,6 +4,8 @@ build/
 obj/
 *.iml
 local.properties
+*.keystore
+*.jks
 TMessagesProj/.cxx/
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/
@@ -16,3 +18,4 @@ TMessagesProj_AppHuawei/afat/
 google-services.json
 sentry.properties
 TMessagesProj/jni/ffmpeg/build_android
+.signing-secret
