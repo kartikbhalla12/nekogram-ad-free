@@ -46,8 +46,14 @@ public class BuildVars {
     public static boolean SUPPORTS_PASSKEYS = false;
 
     static {
-        APP_ID = Extra.APP_ID;
-        APP_HASH = Extra.APP_HASH;
+        // local.properties left apiId/apiHash empty, which overwrote the public
+        // Telegram Android credentials with 0 and "" and made auth.sendCode hang.
+        if (Extra.APP_ID != 0) {
+            APP_ID = Extra.APP_ID;
+        }
+        if (Extra.APP_HASH != null && !Extra.APP_HASH.isEmpty() && !"null".equals(Extra.APP_HASH)) {
+            APP_HASH = Extra.APP_HASH;
+        }
         PLAYSTORE_APP_URL = "https://nekogram.app/download";
         if (ApplicationLoader.applicationContext != null) {
             SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
