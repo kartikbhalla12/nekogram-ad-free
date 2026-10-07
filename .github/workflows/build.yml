@@ -96,6 +96,7 @@ jobs:
             echo "keyPassword=${KEY_PASSWORD}"
           } > local.properties
 
+      # Release builds use the Firebase config for tw.nekomimi.nekogram.
       - name: Write google-services.json
         run: |
           if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
