@@ -1,4 +1,5 @@
 name: Upgrade from Nekogram
+# Opens a pull request when Nekogram main has new commits.
 
 on:
   schedule:
