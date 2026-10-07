@@ -3,10 +3,6 @@ name: Build
 on:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - '!.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:
@@ -105,15 +101,7 @@ jobs:
           if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
             echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > TMessagesProj_App/google-services.json
           else
-            python3 -c 'open("TMessagesProj_App/google-services.json","w").write("""{
-  \"project_info\": {\"project_number\": \"000000000000\", \"project_id\": \"nekogram-local\", \"storage_bucket\": \"nekogram-local.appspot.com\"},
-  \"client\": [
-    {\"client_info\": {\"mobilesdk_app_id\": \"1:000000000000:android:0000000000000000000000\", \"android_client_info\": {\"package_name\": \"tw.nekomimi.nekogram\"}}, \"oauth_client\": [], \"api_key\": [{\"current_key\": \"local-build-placeholder\"}], \"services\": {\"appinvite_service\": {\"other_platform_oauth_client\": []}}},
-    {\"client_info\": {\"mobilesdk_app_id\": \"1:000000000000:android:0000000000000000000001\", \"android_client_info\": {\"package_name\": \"tw.nekomimi.nekogram.beta\"}}, \"oauth_client\": [], \"api_key\": [{\"current_key\": \"local-build-placeholder\"}], \"services\": {\"appinvite_service\": {\"other_platform_oauth_client\": []}}}
-  ],
-  \"configuration_version\": \"1\"
-}
-""")'
+            printf '%s\n' '{"project_info":{"project_number":"000000000000","project_id":"nekogram-local","storage_bucket":"nekogram-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000000000","android_client_info":{"package_name":"tw.nekomimi.nekogram"}},"oauth_client":[],"api_key":[{"current_key":"local-build-placeholder"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000000001","android_client_info":{"package_name":"tw.nekomimi.nekogram.beta"}},"oauth_client":[],"api_key":[{"current_key":"local-build-placeholder"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}' > TMessagesProj_App/google-services.json
           fi
 
       - name: Build release APK
