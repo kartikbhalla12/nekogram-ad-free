@@ -394,11 +394,18 @@ public class ApplicationLoader extends Application {
         if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            // Personal build: Telegram's FCM push cannot reach this app (own Firebase
+            // project), so the foreground keep-alive service is on unless the user turns it off.
+            enabled = true;
         }
         if (enabled) {
             try {
-                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+                Intent serviceIntent = new Intent(applicationContext, NotificationsService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    applicationContext.startForegroundService(serviceIntent);
+                } else {
+                    applicationContext.startService(serviceIntent);
+                }
             } catch (Throwable ignore) {
 
             }
