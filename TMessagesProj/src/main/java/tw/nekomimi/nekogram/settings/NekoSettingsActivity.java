@@ -7,9 +7,7 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.accessibility.AccessibilityManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -17,7 +15,6 @@ import android.widget.TextView;
 import androidx.appcompat.content.res.AppCompatResources;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -26,10 +23,9 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
@@ -40,19 +36,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.FactorAnimator;
 import tw.nekomimi.nekogram.accessibility.AccessibilitySettingsActivity;
 import tw.nekomimi.nekogram.helpers.CloudSettingsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.remote.ConfigHelper;
 
-public class NekoSettingsActivity extends BaseNekoSettingsActivity implements FactorAnimator.Target {
-
-    private static final int ANIMATOR_ID_SEARCH_PAGE_VISIBLE = 0;
-
-    private final BoolAnimator animatorSearchPageVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_PAGE_VISIBLE,
-            this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
     private final List<ConfigHelper.News> newsList = new ArrayList<>();
 
@@ -71,7 +60,6 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
 
     private final int sponsorRow = 100;
 
-    private ActionBarMenuItem syncItem;
     private final ArrayList<SearchResult> searchArray = createSearchArray();
     private final ArrayList<CharSequence> resultNames = new ArrayList<>();
     private final ArrayList<SearchResult> searchResults = new ArrayList<>();
@@ -84,7 +72,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
     @Override
     public View createView(Context context) {
         if (parentLayout != null && parentLayout.isRightLayout()) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_close);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_close);
         }
         topView = new FrameLayout(context);
 
@@ -102,7 +90,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setText(LocaleController.getString(R.string.Nekogram));
-        titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 138.333f - 12, 0, 0));
 
         var subtitleView = new TextView(context);
@@ -111,24 +99,22 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
         subtitleView.setSingleLine();
         subtitleView.setEllipsize(TextUtils.TruncateAt.END);
         subtitleView.setText(String.format(Locale.US, "%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE));
-        subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 168 - 12, 0, 0));
 
         var fragmentView = super.createView(context);
 
-        var menu = actionBar.createMenu();
+        var menu = simpleActionBar.createMenu();
         createSearchItem(menu, new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
 
             @Override
             public void onSearchCollapse() {
-                animatorSearchPageVisible.setValue(false, true);
                 updateActionBarVisible();
                 listView.adapter.update(true);
             }
 
             @Override
             public void onSearchExpand() {
-                animatorSearchPageVisible.setValue(true, true);
                 updateActionBarVisible();
                 search("");
                 listView.adapter.update(true);
@@ -139,9 +125,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
                 search(editText.getText().toString());
             }
         });
-        syncItem = menu.addItem(1, R.drawable.cloud_sync);
+        var syncItem = menu.addItem(1, R.drawable.cloud_sync);
         syncItem.setContentDescription(LocaleController.getString(R.string.CloudConfig));
-        syncItem.setOnClickListener(v -> CloudSettingsHelper.getInstance().showDialog(this));
+        CloudSettingsHelper.getInstance().addItems(this, syncItem);
 
         return fragmentView;
     }
@@ -168,8 +154,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
             items.add(UItem.asButton(passcodeRow, R.drawable.msg_secret, LocaleController.getString(R.string.PasscodeNeko)).slug("passcode"));
         }
         items.add(UItem.asButton(experimentRow, R.drawable.msg_fave, LocaleController.getString(R.string.NotificationsOther)).slug("experiment"));
-        AccessibilityManager am = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (am != null && am.isTouchExplorationEnabled()) {
+        if (BuildConfig.DEBUG || AndroidUtilities.isAccessibilityTouchExplorationEnabled()) {
             items.add(UItem.asButton(accessibilityRow, LocaleController.getString(R.string.AccessibilitySettings)).slug("accessibility"));
         }
         items.add(UItem.asShadow(null));
@@ -257,18 +242,6 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
     @Override
     protected String getKey() {
         return "";
-    }
-
-    @Override
-    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
-        if (id == ANIMATOR_ID_SEARCH_PAGE_VISIBLE) {
-            FragmentFloatingButton.setAnimatedVisibility(syncItem, 1f - factor);
-        }
-    }
-
-    @Override
-    public boolean isSwipeBackEnabled(MotionEvent event) {
-        return !animatorSearchPageVisible.getValue();
     }
 
     private static BaseNekoSettingsActivity createFragment(int icon) {

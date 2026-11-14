@@ -57,7 +57,6 @@ import androidx.media3.common.AudioAttributes;
 import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.exoplayer.audio.TeeAudioProcessor;
-import androidx.media3.exoplayer.dash.DashMediaSource;
 import androidx.media3.exoplayer.hls.HlsMediaSource;
 import androidx.media3.exoplayer.mediacodec.MediaCodecDecoderException;
 import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer;
@@ -189,7 +188,6 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     private int repeatCount;
 
     private boolean shouldPauseOther;
-    MediaSource.Factory dashMediaSourceFactory;
     HlsMediaSource.Factory hlsMediaSourceFactory;
     ProgressiveMediaSource.Factory progressiveMediaSourceFactory;
 
@@ -265,6 +263,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 builder.setLooper(looper);
             }
             player = builder.build();
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(), false);
 
             player.addAnalyticsListener(this);
             player.addListener(this);
@@ -284,6 +286,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 audioPlayer = new ExoPlayer.Builder(ApplicationLoader.applicationContext)
                         .setTrackSelector(trackSelector)
                         .setLoadControl(loadControl).build();
+                audioPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(), false);
                 audioPlayer.addListener(new Player.Listener() {
 
                     @Override
@@ -352,11 +358,6 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             ).createMediaSource(mediaItem);
         }
         switch (type) {
-            case "dash":
-                if (dashMediaSourceFactory == null) {
-                    dashMediaSourceFactory = new DashMediaSource.Factory(mediaDataSourceFactory);
-                }
-                return dashMediaSourceFactory.createMediaSource(mediaItem);
             case "hls":
                 if (hlsMediaSourceFactory == null) {
                     hlsMediaSourceFactory = new HlsMediaSource.Factory(mediaDataSourceFactory);
@@ -1631,11 +1632,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         if (player != null) {
             player.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .setContentType(type == AudioManager.STREAM_VOICE_CALL ? C.AUDIO_CONTENT_TYPE_SPEECH : C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build(), handleAudioFocus);
         }
         if (audioPlayer != null) {
             audioPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .setContentType(type == AudioManager.STREAM_VOICE_CALL ? C.AUDIO_CONTENT_TYPE_SPEECH : C.AUDIO_CONTENT_TYPE_MUSIC)
                 .build(), true);
         }
     }
